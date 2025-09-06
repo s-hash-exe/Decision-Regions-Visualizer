@@ -58,8 +58,8 @@ data = st.sidebar.selectbox(
     index=0
 )
 
-regularization = st.sidebar.selectbox(
-    "Regularization",
+penalty = st.sidebar.selectbox(
+    "Penalty",
     ['none', 'l1', 'l2', 'elasticnet'],
     index=2
 )
@@ -80,6 +80,12 @@ max_iter = int(st.sidebar.number_input(
     value=500
 ))
 
+multi_class = st.sidebar.selectbox(
+    'Multi-Class',
+    ['auto', 'ovr', 'multinomial'],
+    index=0
+)
+
 l1_ratio = st.sidebar.slider(
     'l1_ratio',
     min_value=0.0,
@@ -89,16 +95,33 @@ l1_ratio = st.sidebar.slider(
 )
 
 lr_params = {
-    'penalty': regularization,
+    'penalty': penalty,
     'C': c,
     'solver': solver,
     'max_iter': max_iter,
     'l1_ratio': l1_ratio,
-    'multi_class': 'multinomial'
+    'multi_class': multi_class
 }
 
-if regularization != 'elasticnet':
+if penalty != 'elasticnet':
     lr_params.pop('l1_ratio')
+
+valid_solver_penalty_class = {
+    ('lbfgs', 'l2', 'multinomial'),
+    ('lbfgs', 'none', 'multinomial'),
+    ('liblinear', 'l1', 'ovr'),
+    ('liblinear', 'l2', 'ovr'),
+    ('newton-cg', 'l2', 'multinomial'),
+    ('newton-cg', 'none', 'multinomial'),
+    ('newton-cholesky', 'l2', 'multinomial'),
+    ('newton-cholesky', 'none', 'multinomial'),
+    ('sag', 'l2', 'multinomial'),
+    ('sag', 'none', 'multinomial'),
+    ('saga', 'elasticnet', 'multinomial'),
+    ('saga', 'l1', 'multinomial'),
+    ('saga', 'l2', 'multinomial'),
+    ('saga', 'none', 'multinomial'),
+}
 
 fig, ax = plt.subplots(figsize=(6, 4))
 X, y = getDataset(data)
@@ -109,12 +132,14 @@ graph = st.pyplot(fig)
 
 if st.sidebar.button('Let\'s Run'):
     graph.empty()
-    
-    log_reg = getRegressor(X_train, y_train, lr_params)
-    y_pred = log_reg.predict(X_test)
+    if (solver, penalty, multi_class) not in valid_solver_penalty_class:
+        st.error(f"Invalid combination: solver='{solver}', penalty='{penalty}' is not supported for multinomial logistic regression.")
+    else:
+        log_reg = getRegressor(X_train, y_train, lr_params)
+        y_pred = log_reg.predict(X_test)
 
-    fig, ax = plt.subplots(figsize=(6,4))
-    plotDecisionRegions(X, y, log_reg, ax)
-    graph.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(6,4))
+        plotDecisionRegions(X, y, log_reg, ax)
+        graph.pyplot(fig)
 
-    st.write('Accuracy of model: ', accuracy_score(y_test, y_pred))
+        st.write('Accuracy of model: ', accuracy_score(y_test, y_pred))
