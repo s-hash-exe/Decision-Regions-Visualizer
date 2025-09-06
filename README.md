@@ -51,3 +51,5 @@ streamlit run app.py
 ```
 
 ---
+
+[Try the app live!](https://decision-regions-visualizer-by-geek.streamlit.app/)
