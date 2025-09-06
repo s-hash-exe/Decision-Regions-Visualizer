@@ -18,7 +18,6 @@
 ## Demo
 
 ![App Screenshot](images/result.png)  
-*(Replace with an actual screenshot of your app)*
 
 ---
 
