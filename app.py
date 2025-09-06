@@ -27,6 +27,19 @@ def getRegressor(X_train, y_train, lr_params):
     log_reg.fit(X_train, y_train)
     return log_reg
 
+def validate_params(solver, penalty, multi_class):
+    rules = solver_rules.get(solver)
+    if rules is None:
+        return False, f"Unknown solver: {solver}"
+
+    if penalty not in rules["penalty"]:
+        return False, f"Solver '{solver}' does not support penalty '{penalty}'."
+
+    if multi_class == "multinomial" and not rules["multinomial"]:
+        return False, f"Solver '{solver}' does not support multinomial classification."
+
+    return True, "Valid combination"
+
 def plotDecisionRegions(X, y, clf, ax):
     # a = np.arange(X[:,0].min()-1, X[:,0].max()+1, step=0.01)
     # b = np.arange(X[:,1].min()-1, X[:,1].max()+1, step=0.01)
@@ -60,13 +73,15 @@ st.sidebar.header('User Input Panel')
 data = st.sidebar.selectbox(
     "Select Dataset",
     ["Binary", "Multiclass"],
-    index=0
+    index=0,
+    key='data'
 )
 
 penalty = st.sidebar.selectbox(
     "Penalty",
     ['none', 'l1', 'l2', 'elasticnet'],
-    index=2
+    index=2,
+    key='penalty'
 )
 
 c = st.sidebar.number_input(
@@ -77,18 +92,21 @@ c = st.sidebar.number_input(
 solver = st.sidebar.selectbox(
     "Solver",
     ['lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga'],
-    index=0
+    index=0,
+    key='solver'
 )
 
 max_iter = int(st.sidebar.number_input(
     'Max Interations',
-    value=500
+    value=500,
+    key='max_iter'
 ))
 
 multi_class = st.sidebar.selectbox(
     'Multi-Class',
     ['auto', 'ovr', 'multinomial'],
-    index=0
+    index=0,
+    key='multi_class'
 )
 
 l1_ratio = st.sidebar.slider(
@@ -96,8 +114,18 @@ l1_ratio = st.sidebar.slider(
     min_value=0.0,
     max_value=1.0,
     value=0.0,
-    step=0.01
+    step=0.01,
+    key='l1_ratio'
 )
+
+solver_rules = {
+    "lbfgs": {"penalty": ["l2", "none"], "multinomial": True},
+    "liblinear": {"penalty": ["l1", "l2"], "multinomial": False},
+    "newton-cg": {"penalty": ["l2", "none"], "multinomial": True},
+    "newton-cholesky": {"penalty": ["l2", "none"], "multinomial": True},
+    "sag": {"penalty": ["l2", "none"], "multinomial": True},
+    "saga": {"penalty": ["elasticnet", "l1", "l2", "none"], "multinomial": True},
+}
 
 lr_params = {
     'penalty': penalty,
@@ -111,22 +139,6 @@ lr_params = {
 if penalty != 'elasticnet':
     lr_params.pop('l1_ratio')
 
-valid_solver_penalty_class = {
-    ('lbfgs', 'l2', 'multinomial'),
-    ('lbfgs', 'none', 'multinomial'),
-    ('liblinear', 'l1', 'ovr'),
-    ('liblinear', 'l2', 'ovr'),
-    ('newton-cg', 'l2', 'multinomial'),
-    ('newton-cg', 'none', 'multinomial'),
-    ('newton-cholesky', 'l2', 'multinomial'),
-    ('newton-cholesky', 'none', 'multinomial'),
-    ('sag', 'l2', 'multinomial'),
-    ('sag', 'none', 'multinomial'),
-    ('saga', 'elasticnet', 'multinomial'),
-    ('saga', 'l1', 'multinomial'),
-    ('saga', 'l2', 'multinomial'),
-    ('saga', 'none', 'multinomial'),
-}
 
 fig, ax = plt.subplots(figsize=(6, 4))
 X, y = getDataset(data)
@@ -137,8 +149,9 @@ graph = st.pyplot(fig)
 
 if st.sidebar.button('Let\'s Run'):
     graph.empty()
-    if (solver, penalty, multi_class) not in valid_solver_penalty_class:
-        st.error(f"Invalid combination: solver='{solver}', penalty='{penalty}' is not supported for multinomial logistic regression.")
+    valid, msg = validate_params(solver, penalty, multi_class)
+    if not valid:
+        st.error(msg)
     else:
         log_reg = getRegressor(X_train, y_train, lr_params)
         y_pred = log_reg.predict(X_test)
