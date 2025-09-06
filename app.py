@@ -44,6 +44,11 @@ def plotDecisionRegions(X, y, clf, ax):
     ax.set_xlabel("Feature 1")
     ax.set_ylabel("Feature 2")
 
+if st.sidebar.button("🔄 Refresh"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
+
 # st.title('Visualize your Model')
 st.markdown("<h1 style='text-align: center;'>Visualize Logistic Regression</h1>", unsafe_allow_html=True)
 
