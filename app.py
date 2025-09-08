@@ -5,7 +5,7 @@ def show_home():
     st.write("Select an algorithm to explore:")
 
     cols = st.columns(2) 
-    algorithms = ["Logistic Regression", "SVM", "Decision Tree", "KNN"]
+    algorithms = ["Logistic Regression"]
 
     for i, algo in enumerate(algorithms):
         with cols[i % 2]:
